@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-import backendFinalVersion
+#import backendFinalVersion
 
 # إعداد المظهر العام
 ctk.set_appearance_mode("light")
@@ -38,14 +38,14 @@ def open_automation_window(parent_root=None):
     # إنشاء النافذة الرئيسية
     window = ctk.CTkToplevel() if parent_root else ctk.CTk()
     window.title("Network Automation Queue Manager")
-    window.geometry("1000x760") # زيادة العرض قليلاً لاستيعاب العمود الجديد
+    window.geometry("950x760")
     window.configure(fg_color=COLORS["bg_main"])
     
     # تمركز النافذة
     window.update_idletasks()
-    x = (window.winfo_screenwidth() - 1000) // 2
+    x = (window.winfo_screenwidth() - 950) // 2
     y = (window.winfo_screenheight() - 760) // 2
-    window.geometry(f"1000x760+{x}+{y}")
+    window.geometry(f"950x760+{x}+{y}")
 
     # ============ الهيدر ============
     header_frame = ctk.CTkFrame(window, fg_color=COLORS["primary"], height=60, corner_radius=0)
@@ -69,13 +69,13 @@ def open_automation_window(parent_root=None):
     subtitle_label.place(relx=0.5, rely=0.90, anchor="center")
 
     # ============ المحتوى الرئيسي ============
-    main_container = ctk.CTkFrame(window, fg_color="transparent")
+    main_container = ctk.CTkFrame(window, fg_color=COLORS["bg_main"])
     main_container.pack(fill="both", expand=True, padx=20, pady=10)
 
     # ============ التبويبات ============
     tabview = ctk.CTkTabview(
         main_container, 
-        width=950, 
+        width=880, 
         height=220,
         fg_color=COLORS["bg_card"],
         segmented_button_fg_color=COLORS["bg_input"],
@@ -122,36 +122,29 @@ def open_automation_window(parent_root=None):
     vlan_frame.pack(expand=True, pady=10)
     
     # قائمة الواجهات
-    interfaces_list_one = [f"Gi0/{i}" for i in range(11)]
-    interfaces_list_two=[f"Gi1/{i} " for i in range(11) ]
-    interfaces_list = interfaces_list_one + interfaces_list_two
+    interfaces_list = [f"Gi0/{i}" for i in range(11)]
+    
     # الصف الأول - Labels
-    ctk.CTkLabel(vlan_frame, text="Switch IP Address", **label_style).grid(row=0, column=0, padx=10, pady=(0, 5))
-    ctk.CTkLabel(vlan_frame, text="VLAN ID", **label_style).grid(row=0, column=1, padx=10, pady=(0, 5))
-    ctk.CTkLabel(vlan_frame, text="VLAN Name", **label_style).grid(row=0, column=2, padx=10, pady=(0, 5))
-    ctk.CTkLabel(vlan_frame, text="Interface", **label_style).grid(row=0, column=3, padx=10, pady=(0, 5))
-    ctk.CTkLabel(vlan_frame, text="Mode", **label_style).grid(row=0, column=4, padx=10, pady=(0, 5)) # إضافة عنوان Mode
+    ctk.CTkLabel(vlan_frame, text="Switch IP Address", **label_style).grid(row=0, column=0, padx=15, pady=(0, 5))
+    ctk.CTkLabel(vlan_frame, text="VLAN ID", **label_style).grid(row=0, column=1, padx=15, pady=(0, 5))
+    ctk.CTkLabel(vlan_frame, text="VLAN Name", **label_style).grid(row=0, column=2, padx=15, pady=(0, 5))
+    ctk.CTkLabel(vlan_frame, text="Interface", **label_style).grid(row=0, column=3, padx=15, pady=(0, 5))
 
     # الصف الثاني - Inputs
-    ip_v = ctk.CTkEntry(vlan_frame, placeholder_text="192.168.20.1", width=160, height=40, **entry_style)
-    ip_v.grid(row=1, column=0, padx=10, pady=10)
+    ip_v = ctk.CTkEntry(vlan_frame, placeholder_text="192.168.20.1", width=180, height=40, **entry_style)
+    ip_v.grid(row=1, column=0, padx=15, pady=10)
 
-    vid_v = ctk.CTkEntry(vlan_frame, placeholder_text="10", width=80, height=40, **entry_style)
-    vid_v.grid(row=1, column=1, padx=10, pady=10)
+    vid_v = ctk.CTkEntry(vlan_frame, placeholder_text="10", width=100, height=40, **entry_style)
+    vid_v.grid(row=1, column=1, padx=15, pady=10)
 
-    vname_v = ctk.CTkEntry(vlan_frame, placeholder_text="Sales", width=130, height=40, **entry_style)
-    vname_v.grid(row=1, column=2, padx=10, pady=10)
+    vname_v = ctk.CTkEntry(vlan_frame, placeholder_text="Sales", width=150, height=40, **entry_style)
+    vname_v.grid(row=1, column=2, padx=15, pady=10)
 
-    port_v = ctk.CTkOptionMenu(vlan_frame, values=interfaces_list, width=120, height=40, **dropdown_style)
+    port_v = ctk.CTkOptionMenu(vlan_frame, values=interfaces_list, width=140, height=40, **dropdown_style)
     port_v.set("Gi0/0")
-    port_v.grid(row=1, column=3, padx=10, pady=10)
+    port_v.grid(row=1, column=3, padx=15, pady=10)
 
-    # إضافة اختيار الـ Mode
-    mode_v = ctk.CTkOptionMenu(vlan_frame, values=["access", "trunk"], width=110, height=40, **dropdown_style)
-    mode_v.set("access")
-    mode_v.grid(row=1, column=4, padx=10, pady=10)
-
-    # زر إضافة VLAN (تعديل columnspan ليشمل العمود الخامس)
+    # زر إضافة VLAN
     add_vlan_btn = ctk.CTkButton(
         vlan_frame, 
         text="Add VLAN Task",
@@ -162,42 +155,33 @@ def open_automation_window(parent_root=None):
         font=("Segoe UI", 13, "bold"),
         corner_radius=10
     )
-    add_vlan_btn.grid(row=2, column=0, columnspan=5, pady=15)
+    add_vlan_btn.grid(row=2, column=0, columnspan=4, pady=15)
 
     # ============ تبويب OSPF ============
- # ============ تبويب OSPF ============
     ospf_frame = ctk.CTkFrame(tab_ospf, fg_color="transparent")
     ospf_frame.pack(expand=True, pady=10)
     
     # الصف الأول - Labels
-    ctk.CTkLabel(ospf_frame, text="Router IP", **label_style).grid(row=0, column=0, padx=10, pady=(0, 5))
-    ctk.CTkLabel(ospf_frame, text="Process ID", **label_style).grid(row=0, column=1, padx=10, pady=(0, 5))
-    ctk.CTkLabel(ospf_frame, text="Router ID", **label_style).grid(row=0, column=2, padx=10, pady=(0, 5))
-    ctk.CTkLabel(ospf_frame, text="Network IP", **label_style).grid(row=0, column=3, padx=10, pady=(0, 5))
-    ctk.CTkLabel(ospf_frame, text="Wildcard", **label_style).grid(row=0, column=4, padx=10, pady=(0, 5))
-    ctk.CTkLabel(ospf_frame, text="Area", **label_style).grid(row=0, column=5, padx=10, pady=(0, 5))
+    ctk.CTkLabel(ospf_frame, text="Router IP Address", **label_style).grid(row=0, column=0, padx=15, pady=(0, 5))
+    ctk.CTkLabel(ospf_frame, text="Router ID", **label_style).grid(row=0, column=1, padx=15, pady=(0, 5))
+    ctk.CTkLabel(ospf_frame, text="Network IP", **label_style).grid(row=0, column=2, padx=15, pady=(0, 5))
+    ctk.CTkLabel(ospf_frame, text="OSPF Area", **label_style).grid(row=0, column=3, padx=15, pady=(0, 5))
 
     # الصف الثاني - Inputs
-    ip_o = ctk.CTkEntry(ospf_frame, placeholder_text="192.168.32.10", width=140, height=40, **entry_style)
-    ip_o.grid(row=1, column=0, padx=8, pady=10)
+    ip_o = ctk.CTkEntry(ospf_frame, placeholder_text="192.168.32.10", width=180, height=40, **entry_style)
+    ip_o.grid(row=1, column=0, padx=15, pady=10)
 
-    pid_o = ctk.CTkEntry(ospf_frame, placeholder_text="1", width=90, height=40, **entry_style) # حقل الـ Process ID الجديد
-    pid_o.grid(row=1, column=1, padx=8, pady=10)
+    rid_o = ctk.CTkEntry(ospf_frame, placeholder_text="1.1.1.1", width=140, height=40, **entry_style)
+    rid_o.grid(row=1, column=1, padx=15, pady=10)
 
-    rid_o = ctk.CTkEntry(ospf_frame, placeholder_text="1.1.1.1", width=120, height=40, **entry_style)
-    rid_o.grid(row=1, column=2, padx=8, pady=10)
+    net_o = ctk.CTkEntry(ospf_frame, placeholder_text="192.168.20.0", width=180, height=40, **entry_style)
+    net_o.grid(row=1, column=2, padx=15, pady=10)
 
-    net_o = ctk.CTkEntry(ospf_frame, placeholder_text="192.168.20.0", width=140, height=40, **entry_style)
-    net_o.grid(row=1, column=3, padx=8, pady=10)
-
-    wild_o = ctk.CTkEntry(ospf_frame, placeholder_text="0.0.0.255", width=120, height=40, **entry_style) # حقل الـ Wildcard الجديد
-    wild_o.grid(row=1, column=4, padx=8, pady=10)
-
-    area_o = ctk.CTkOptionMenu(ospf_frame, values=["0", "1", "10", "100"], width=90, height=40, **dropdown_style)
+    area_o = ctk.CTkOptionMenu(ospf_frame, values=["0", "1", "10", "100"], width=120, height=40, **dropdown_style)
     area_o.set("0")
-    area_o.grid(row=1, column=5, padx=8, pady=10)
+    area_o.grid(row=1, column=3, padx=15, pady=10)
 
-    # زر إضافة OSPF (توسيع ليشمل 6 أعمدة)
+    # زر إضافة OSPF
     add_ospf_btn = ctk.CTkButton(
         ospf_frame, 
         text="Add OSPF Task",
@@ -208,7 +192,7 @@ def open_automation_window(parent_root=None):
         font=("Segoe UI", 13, "bold"),
         corner_radius=10
     )
-    add_ospf_btn.grid(row=2, column=0, columnspan=6, pady=15)
+    add_ospf_btn.grid(row=2, column=0, columnspan=4, pady=15)
 
     # ============ قسم قائمة المهام ============
     queue_section = ctk.CTkFrame(main_container, fg_color=COLORS["bg_card"], corner_radius=15)
@@ -286,7 +270,9 @@ def open_automation_window(parent_root=None):
     )
     deploy_btn.grid(row=0, column=1, padx=15)
 
-    # زر العودة
+   
+
+# زر العودة
     back_btn = ctk.CTkButton(
         btn_frame,
         text="Back to Dashboard",
@@ -308,11 +294,11 @@ def open_automation_window(parent_root=None):
         queue_listbox.delete(0, 'end')
         for i, t in enumerate(task_queue):
             if t['type'] == "VLAN":
-                # إضافة الـ Mode لنص المهمة في القائمة
-                info = f"  [VLAN]  Switch: {t['ip']}  |  ID: {t['vlan_id']}  |  Mode: {t['mode']}  |  Port: {t['port']}"
+                info = f"  [VLAN]  Switch: {t['ip']}  |  ID: {t['vlan_id']}  |  Name: {t['vlan_name']}  |  Port: {t['port']}"
             else:
                 info = f"  [OSPF]  Router: {t['ip']}  |  Network: {t['net_ip']}  |  Area: {t['area']}  |  RID: {t['rid']}"
             queue_listbox.insert('end', f" {i+1}. {info}")
+            # تلوين بديل للصفوف
             if i % 2 == 0:
                 queue_listbox.itemconfig(i, bg="#F8FAFC")
         task_count_label.configure(text=f"{len(task_queue)} task{'s' if len(task_queue) != 1 else ''}")
@@ -321,40 +307,33 @@ def open_automation_window(parent_root=None):
         if not ip_v.get() or not vid_v.get():
             messagebox.showwarning("Input Required", "Please enter Switch IP and VLAN ID")
             return
-        # حفظ الـ Mode المختار في القاموس
         task_queue.append({
             "type": "VLAN", 
             "ip": ip_v.get(), 
             "vlan_id": vid_v.get(),
             "vlan_name": vname_v.get() or "Unnamed", 
-            "port": port_v.get(),
-            "mode": mode_v.get() # تم تخزين التقنية هنا
+            "port": port_v.get()
         })
         ip_v.delete(0, 'end')
         vid_v.delete(0, 'end')
         vname_v.delete(0, 'end')
         update_listbox()
         messagebox.showinfo("Success", "VLAN task added successfully!")
-        
+
     def add_ospf():
-        if not ip_o.get() or not net_o.get() or not pid_o.get():
-            messagebox.showwarning("Input Required", "Please enter Router IP, Process ID, and Network IP")
+        if not ip_o.get() or not net_o.get():
+            messagebox.showwarning("Input Required", "Please enter Router IP and Network IP")
             return
-        
         task_queue.append({
             "type": "OSPF", 
             "ip": ip_o.get(), 
-            "pid": pid_o.get(), # حفظ Process ID
             "rid": rid_o.get() or "N/A",
             "net_ip": net_o.get(), 
-            "wildcard": wild_o.get() or "0.0.0.255", # حفظ Wildcard مع قيمة افتراضية إذا تُرِك فارغاً
             "area": area_o.get()
         })
         ip_o.delete(0, 'end')
-        pid_o.delete(0, 'end') # تفريغ الحقل
         rid_o.delete(0, 'end')
         net_o.delete(0, 'end')
-        wild_o.delete(0, 'end') # تفريغ الحقل
         update_listbox()
         messagebox.showinfo("Success", "OSPF task added successfully!")
 
@@ -380,20 +359,22 @@ def open_automation_window(parent_root=None):
         for t in task_queue:
             try:
                 if t['type'] == "VLAN":
-                    status = backendFinalVersion.run_vlan_logic(
-                        t['ip'], "admin", "cisco123", "cisco", 
-                        t['vlan_id'], t['vlan_name'], t['port'], t['mode']
-                    )
-                    status = f"Configured as {t['mode']} Successfully" 
-                elif t['type']=="OSPF":
-                     status = backendFinalVersion.run_ospf_logic(
-                        t['ip'], "admin", "cisco123", "cisco", 
-                        t['pid'], t['rid'], t['net_ip'], t['wildcard'], t['area'] # تمرير القيم الديناميكية من الـ Queue
-                    )
-                     status = "OSPF Configured Successfully"
+                    # استدعاء الـ backend
+                    # status = backendFinalVersion.run_vlan_logic(
+                    #     t['ip'], "admin", "cisco123", "cisco", 
+                    #     t['vlan_id'], t['vlan_name'], t['port'], "access"
+                    # )
+                    status = "Configured Successfully"  # للاختبار
+                else:
+                    # status = backendFinalVersion.run_ospf_logic(
+                    #     t['ip'], "admin", "cisco123", "cisco", 
+                    #     "1", t['rid'], t['net_ip'], "0.0.0.255", t['area']
+                    # )
+                    status = "Configured Successfully"  # للاختبار
+                results.append(f"✓ {t['type']} - {t['ip']}: {status}")
             except Exception as e:
                 results.append(f"✗ {t['type']} - {t['ip']}: Error - {str(e)}")
-       
+        
         messagebox.showinfo("Deployment Complete", "\n".join(results))
         task_queue.clear()
         update_listbox()
@@ -403,6 +384,7 @@ def open_automation_window(parent_root=None):
     add_ospf_btn.configure(command=add_ospf)
     remove_btn.configure(command=remove_task)
     deploy_btn.configure(command=run_all)
+   
 
     update_listbox()
     
@@ -412,3 +394,4 @@ def open_automation_window(parent_root=None):
 if __name__ == "__main__":
     app = open_automation_window()
     app.mainloop()
+

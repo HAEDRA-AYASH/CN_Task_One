@@ -1,3 +1,6 @@
+import platform
+from netmiko import ConnectHandler
+
 from netmiko import ConnectHandler
 
 class Device:
@@ -61,6 +64,55 @@ def configure_device_task(**kwargs):
         return {"status": "Failure", "output": "Missing parameters."}
     
     return _connect_and_send_config(device, config_commands)
+
+# ===================== وظائف VLAN & OSPF ===================== #
+
+def configure_vlan_task(**kwargs):
+    device = kwargs.get('device')
+    vlan_id = kwargs.get('vlan_id')
+    vlan_name = kwargs.get('vlan_name')
+    interface = kwargs.get('interface', 'G0/1')
+    mode = kwargs.get('mode', 'access')
+    
+    print(f"\n[VLAN TASK] Preparing config for VLAN {vlan_id} on {interface}")
+    
+    # دمج أمر switchport المبدئي من الكود الثاني مع منطق الـ Trunk من الكود الأول
+    config_commands = [
+        f'vlan {vlan_id}',
+        f'name {vlan_name}',
+        'exit',
+        f'interface {interface}',
+        'switchport', # يضمن أن المنفذ يعمل كـ Layer 2
+        f'switchport mode {mode}'
+    ]
+    
+    if mode == 'access':
+        config_commands.append(f'switchport access vlan {vlan_id}')
+    elif mode == 'trunk':
+        config_commands.append(f'switchport trunk allowed vlan add {vlan_id}')
+        
+    config_commands.extend(['no shutdown', 'exit'])
+    return _connect_and_send_config(device, config_commands)
+
+def configure_ospf_task(**kwargs):
+    device = kwargs.get('device')
+    process_id = kwargs.get('process_id', '1')
+    router_id = kwargs.get('router_id')
+    network_ip = kwargs.get('network_ip')
+    wildcard = kwargs.get('wildcard', '0.0.0.255')
+    area = kwargs.get('area', '0')
+    
+    print(f"\n[OSPF TASK] Preparing OSPF {process_id} for network {network_ip}")
+    
+    config_commands = [
+        f'router ospf {process_id}',
+        f'router-id {router_id}',
+        f'network {network_ip} {wildcard} area {area}',
+        'exit'
+    ]
+    return _connect_and_send_config(device, config_commands)
+
+# ===================== وظائف DHCP & DNS ===================== #
 
 def configure_dhcp_pool_task(**kwargs):
     """Configures a basic DHCP pool."""
@@ -127,9 +179,11 @@ def configure_dhcp_reservation_task(**kwargs):
     ]
     
     return _connect_and_send_config(device, config_commands)
+ 
+    
+ 
+# ===================== وظائف VPN ===================== #
 
-
-#=====================VPN Configuration=====================#
 def configure_vpn_task(**kwargs):
     device = kwargs.get('device')
     peer_ip = kwargs.get('peer_ip')
@@ -138,7 +192,6 @@ def configure_vpn_task(**kwargs):
     remote_net = kwargs.get('remote_net')
 
     config_commands = [
-       
         'crypto isakmp policy 10',
         'encryption aes 128',
         'hash sha',
@@ -156,45 +209,7 @@ def configure_vpn_task(**kwargs):
         'exit',
         'interface GigabitEthernet0/0',  
         'crypto map MY_CRYPTO_MAP',
-        'exit',
-        'wr'
-    ]
-
-    return _connect_and_send_config(device,config_commands)
-
-# أضف هذه الدوال أو حدثها في نهاية ملف back_one.py
-
-def configure_vlan_task(**kwargs):
-    device = kwargs.get('device')
-    vlan_id = kwargs.get('vlan_id')
-    vlan_name = kwargs.get('vlan_name')
-    interface = kwargs.get('interface', 'G0/1')
-    mode = kwargs.get('mode', 'access')
-    
-    config_commands = [
-        f'vlan {vlan_id}',
-        f'name {vlan_name}',
-        'exit',
-        f'interface {interface}',
-        f'switchport mode {mode}',
-        f'switchport access vlan {vlan_id}',
-        'no shutdown',
         'exit'
     ]
-    return _connect_and_send_config(device, config_commands)
 
-def configure_ospf_task(**kwargs):
-    device = kwargs.get('device')
-    process_id = kwargs.get('process_id', '1')
-    router_id = kwargs.get('router_id')
-    network_ip = kwargs.get('network_ip')
-    wildcard = kwargs.get('wildcard', '0.0.0.255')
-    area = kwargs.get('area', '0')
-    
-    config_commands = [
-        f'router ospf {process_id}',
-        f'router-id {router_id}',
-        f'network {network_ip} {wildcard} area {area}',
-        'exit'
-    ]
     return _connect_and_send_config(device, config_commands)

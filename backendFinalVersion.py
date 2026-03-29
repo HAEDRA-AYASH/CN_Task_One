@@ -1,4 +1,9 @@
 import threading
+import time
+from scapy.all import ARP, Ether, srp
+from netmiko import ConnectHandler
+
+import threading
 from scapy.all import ARP, Ether, srp
 from netmiko import ConnectHandler
 import time 
@@ -12,7 +17,10 @@ try:
         configure_dhcp_reservation_task, 
         configure_dns_send_config, # تم التأكد من وجودها
         Device,
+        configure_ospf_task,
         configure_vpn_task
+        ,configure_vlan_task 
+         
     )
 except ImportError:
     # Mock classes if back_one is missing (لأغراض الاختبار فقط)
@@ -92,11 +100,9 @@ class Scan:
                     except ValueError: pass
              
             if ip == "192.168.31.2": category = "Servers"; sys_descr = sys_descr if "Virtual" in sys_descr else "Dedicated Server"
-            if ip == "192.168.20.30": category = "Switches"; sys_descr = "Switch"
-            if ip == "192.168.32.10": category = "Routers"; sys_descr = "Router"
-            if ip == "192.168.32.20": category = "Routers"; sys_descr = "Router"
-            if ip == "192.168.30.2": category = "PCs"; sys_descr = "PCs"
-            if ip in ["192.168.20.2","192.168.20.3","192.168.20.4"]: category="PCs"; sys_descr="PCs"
+            if ip in ["192.168.20.30", "192.168.30.11"]: category = "Switches"; sys_descr = "Switch"
+            if ip in ["192.168.32.10", "192.168.32.20"]: category = "Routers"; sys_descr = "Router"
+            if ip in ["192.168.30.2", "192.168.20.2", "192.168.20.3", "192.168.20.4"]: category = "PCs"; sys_descr = "PCs"
 
             device_name = f"{category}{self.counters.get(category, 1)}"
             if category in self.counters: self.counters[category] += 1
@@ -132,7 +138,11 @@ class Scan:
 def _get_router_device(scan_results, user, password, secret):
     targets = scan_results.get("Routers", [])
     if not targets: return None
-    dev = targets[0] 
+    
+    # الحل: ترتيب المصفوفة حسب عنوان الـ IP لضمان اختيار الراوتر الأول دائماً
+    targets_sorted = sorted(targets, key=lambda x: x['ip'])
+    dev = targets_sorted[0] 
+    
     return Device(host=dev['ip'], username=user, password=password, device_type="cisco_ios", secret=secret)
 
 def run_ip_helper_logic(target_ip, scan_results, ssh_user, ssh_pass, ssh_secret):
@@ -142,16 +152,24 @@ def run_ip_helper_logic(target_ip, scan_results, ssh_user, ssh_pass, ssh_secret)
         logs.append("No Configurable devices found.")
         return logs
     
-    for dev in targets:
-        interface = "Vlan20" if "Switch" in dev['descr'] else "GigabitEthernet0/1.20"
-        logs.append(f"Configuring Helper on {dev['ip']} ({interface})...")
-        device_model = Device(host=dev['ip'], username=ssh_user, password=ssh_pass, device_type="cisco_ios", secret=ssh_secret)
-        try:
-            res = configure_device_task(device=device_model, ip_helper=target_ip, interface=interface)
-            logs.append(f" -> {res['status']}")
-        except Exception as e: logs.append(f" -> Error: {e}")
-    return logs
+    # الحل: البحث عن الجهاز المستهدف فقط وتجاهل باقي الأجهزة
+    target_device = next((dev for dev in targets if dev['ip'] == target_ip), None)
+    
+    if not target_device:
+        logs.append(f"Target Router {target_ip} not found in scan results.")
+        return logs
 
+    interface = "Vlan20" if "Switch" in target_device['descr'] else "GigabitEthernet0/1.20"
+    logs.append(f"Configuring Helper on {target_device['ip']} ({interface})...")
+    
+    device_model = Device(host=target_device['ip'], username=ssh_user, password=ssh_pass, device_type="cisco_ios", secret=ssh_secret)
+    try:
+        res = configure_device_task(device=device_model, ip_helper=target_ip, interface=interface)
+        logs.append(f" -> {res['status']}")
+    except Exception as e: 
+        logs.append(f" -> Error: {e}")
+        
+    return logs
 def run_dhcp_pool_logic(dhcp_params, scan_results, ssh_user, ssh_pass, ssh_secret):
     logs = []
     device_model = _get_router_device(scan_results, ssh_user, ssh_pass, ssh_secret)
@@ -233,37 +251,40 @@ def run_dns_config_logic(router_ip, primary_dns, ssh_user, ssh_pass, ssh_secret 
         logs.append(f" -> Error: {e}")
         
     return logs
+# ==========================================================
+# GUI BRIDGES (تم دمج منطق الكود 2 المُحدث لضمان توافق الـ GUI)
+# ==========================================================
 
-
-def run_vpn_logic_bridge(r1_ip, r2_ip, lan1, lan2, key, user, password, secret):
-    logs = []
-    
-    # 1. إعداد الراوتر الأول
-    logs.append(f"Configuring Router 1 ({r1_ip})...")
-    dev1 = Device(host=r1_ip, username=user, password=password, device_type="cisco_ios", secret=secret)
-    configure_vpn_task(device=dev1, peer_ip=r2_ip, local_net=lan1, remote_net=lan2, shared_key=key)
-    logs.append(" -> Router 1 Success")
- 
-    # 2. إعداد الراوتر الثاني (عكس الإعدادات)
-    logs.append(f"Configuring Router 2 ({r2_ip})...")
-    dev2 = Device(host=r2_ip, username=user, password=password, device_type="cisco_ios", secret=secret)
-    configure_vpn_task(device=dev2, peer_ip=r1_ip, local_net=lan2, remote_net=lan1, shared_key=key)
-    logs.append(" -> Router 2 Success")
- 
-        
-    return logs
-
-
-# أضف هذه الدوال في نهاية ملف backendFinalVersion.py
-
-def run_vlan_logic(ip, user, password, secret, vlan_id, vlan_name, interface, mode):
-    from back_one import Device, configure_vlan_task
-    dev = Device(host=ip, username=user, password=password, device_type="cisco_ios", secret=secret)
-    res = configure_vlan_task(device=dev, vlan_id=vlan_id, vlan_name=vlan_name, interface=interface, mode=mode)
-    return res['status']
+def run_vlan_logic(ip, user, pw, sec, v_id, v_name, port, mode):
+    """محدثة من الكود 2 لترجع قائمة نصية مفهومة للواجهة"""
+    d = Device(host=ip, username=user, password=pw, device_type="cisco_ios", secret=sec)
+    res = configure_vlan_task(device=d, vlan_id=v_id, vlan_name=v_name, interface=port, mode=mode)
+    if res.get("status") == "Success":
+        return [f"DONE: VLAN {v_id} configured on {port} at {ip}"]
+    return [f"ERROR on {ip}: {res.get('output', 'Unknown error')}"]
 
 def run_ospf_logic(ip, user, password, secret, pid, rid, net_ip, wild, area):
-    from back_one import Device, configure_ospf_task
+    """محدثة من الكود 2 للتعامل مع الـ Error Handling بشكل أفضل"""
     dev = Device(host=ip, username=user, password=password, device_type="cisco_ios", secret=secret)
     res = configure_ospf_task(device=dev, process_id=pid, router_id=rid, network_ip=net_ip, wildcard=wild, area=area)
-    return res['status']
+    
+    if isinstance(res, dict) and res.get("status") == "Success":
+        return "Success"
+    elif isinstance(res, dict):
+        return res.get("output", "Failed to configure OSPF")
+    return "Failed to configure OSPF"
+
+def run_vpn_logic_bridge(r1_ip, r2_ip, lan1, lan2, key, user, pw, sec):
+    """محدثة من الكود 2 لمعالجة الراوترين معاً وإرجاع حالتهما"""
+    d1 = Device(host=r1_ip, username=user, password=pw, device_type="cisco_ios", secret=sec)
+    d2 = Device(host=r2_ip, username=user, password=pw, device_type="cisco_ios", secret=sec)
+    res1 = configure_vpn_task(device=d1, peer_ip=r2_ip, local_net=lan1, remote_net=lan2, shared_key=key)
+    res2 = configure_vpn_task(device=d2, peer_ip=r1_ip, local_net=lan2, remote_net=lan1, shared_key=key)
+    return [f"R1 ({r1_ip}): {res1.get('status', 'Error')}", f"R2 ({r2_ip}): {res2.get('status', 'Error')}"]
+
+
+
+
+#########################################33
+
+
