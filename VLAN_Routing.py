@@ -394,7 +394,7 @@ def open_automation_window(parent_root=None):
             except Exception as e:
                 results.append(f"✗ {t['type']} - {t['ip']}: Error - {str(e)}")
        
-        messagebox.showinfo("Deployment Complete", "\n".join(results))
+        messagebox.showinfo("Deployment Complete","✔️Added Successfully" )
         task_queue.clear()
         update_listbox()
 
