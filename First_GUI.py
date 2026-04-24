@@ -3,14 +3,13 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import threading
-from PIL import Image, ImageTk 
+from PIL import Image, ImageTk, ImageDraw
 import sys
-import VPN_GUI  # استيراد ملف VPN
-import VLAN_Routing  # الإضافة الجديدة: استيراد ملف الأتمتة الشاملة
+import math
+import VPN_GUI
+import VLAN_Routing
 
-# محاولة استيراد الملفات الأخرى
 try:
-    import backendFinalVersion
     from Main_GUI import NetworkApp
 except ImportError:
     class MockBackend:
@@ -27,31 +26,115 @@ except ImportError:
             ctk.CTkLabel(root, text="Mock DHCP Interface").pack(pady=20)
             ctk.CTkButton(root, text="Back", command=back_callback).pack()
 
-ctk.set_appearance_mode("System")
-ctk.set_default_color_theme("blue")
+# إعدادات الواجهة المستقبلية
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("dark-blue")
 
-# ---------------------------------------------------------
-# وظيفة تحميل الخلفية بشكل آمن
-# ---------------------------------------------------------
+# ألوان فضائية مستقبلية
+SPACE_DARK = "#050b14"
+SPACE_MID = "#0a1628"
+SPACE_LIGHT = "#0f2138"
+NEON_BLUE = "#00d4ff"
+NEON_CYAN = "#00ffff"
+NEON_PURPLE = "#b300ff"
+SILVER = "#c0c0c0"
+HOLO_GREEN = "#00ff88"
+WARP_CORE = "#ff3366"
+STAR_WHITE = "#e8eef2"
+DEEP_SPACE = "#01050f"
+
 def safe_load_image(path):
     try:
         return Image.open(path)
-    except Exception as e:
-        print(f"Error loading image: {e}")
+    except Exception:
         return None
 
-# ---------------------------------------------------------
-# دالة تشغيل الواجهات الجديدة
-# ---------------------------------------------------------
 def launch_vpn_interface():
     VPN_GUI.open_vpn_window(welcome_root)
 
 def launch_advanced_automation():
-    # تشغيل واجهة VLAN & OSPF الديناميكية
     VLAN_Routing.open_automation_window(welcome_root)
 
 # ---------------------------------------------------------
-# DNS Interface Window
+# دوال مساعدة للواجهة الفضائية
+# ---------------------------------------------------------
+def create_futuristic_canvas(parent):
+    """إنشاء خلفية فضائية مع نجوم متحركة"""
+    canvas = tk.Canvas(parent, highlightthickness=0, bg=DEEP_SPACE)
+    
+    # رسم نجوم ثابتة
+    import random
+    for _ in range(150):
+        x = random.randint(0, 2000)
+        y = random.randint(0, 2000)
+        brightness = random.randint(100, 255)
+        color = f"#{brightness:02x}{brightness:02x}{brightness:02x}"
+        canvas.create_oval(x-1, y-1, x+1, y+1, fill=color, outline="", tags="star")
+    
+    # رسم سديم (Nebula) باستخدام دوائر شفافة
+    canvas.create_oval(100, 100, 400, 400, fill="#003366", outline="", stipple="gray50", tags="nebula")
+    canvas.create_oval(500, 400, 800, 700, fill="#330066", outline="", stipple="gray50", tags="nebula")
+    canvas.create_oval(600, 100, 900, 350, fill="#006666", outline="", stipple="gray25", tags="nebula")
+    
+    return canvas
+
+def create_futuristic_button(parent, text, command, color=NEON_BLUE):
+    """إنشاء زر مستقبلي بتأثير توهج"""
+    btn_frame = tk.Frame(parent, bg=DEEP_SPACE)
+    
+    # زر رئيسي
+    button = ctk.CTkButton(
+        btn_frame,
+        text=text,
+        font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
+        width=340,
+        height=52,
+        corner_radius=25,
+        fg_color="transparent",
+        hover_color=color + "33",
+        text_color=color,
+        border_width=2,
+        border_color=color
+    )
+    button.configure(command=command)
+    button.pack()
+    
+    return btn_frame
+
+def create_hologram_card(parent, title):
+    """إنشاء بطاقة هولوغرام مستقبلية"""
+    card = tk.Frame(parent, bg=DEEP_SPACE, highlightthickness=0)
+    
+    # إطار خارجي مضيء
+    outer_frame = tk.Frame(card, bg=NEON_BLUE, highlightthickness=0)
+    outer_frame.pack(fill="both", expand=True, padx=1, pady=1)
+    
+    # إطار داخلي
+    inner_frame = tk.Frame(outer_frame, bg=SPACE_MID, highlightthickness=0)
+    inner_frame.pack(fill="both", expand=True, padx=1, pady=1)
+    
+    # رأس البطاقة
+    header = tk.Frame(inner_frame, bg=SPACE_LIGHT, height=45)
+    header.pack(fill="x")
+    header.pack_propagate(False)
+    
+    # خط توهج في الأعلى
+    glow_line = tk.Frame(header, bg=NEON_BLUE, height=2)
+    glow_line.pack(fill="x")
+    
+    title_label = tk.Label(
+        header,
+        text=f"◆ {title} ◆",
+        font=("Segoe UI", 13, "bold"),
+        bg=SPACE_LIGHT,
+        fg=NEON_CYAN
+    )
+    title_label.pack(pady=10)
+    
+    return inner_frame
+
+# ---------------------------------------------------------
+# نافذة DNS   
 # ---------------------------------------------------------
 def open_dns_interface_window():
     welcome_root.withdraw()
@@ -103,99 +186,139 @@ def open_dns_interface_window():
 
     tk.Button(dns_win, text="⬅️ Back", font=('Arial', 11, 'bold'), bg="#e74c3c", fg="white",
               command=go_back_to_welcome).place(relx=0.97, rely=0.97, anchor="se")
-
 # ---------------------------------------------------------
-# MAIN EXECUTION BLOCK (خلفية متجاوبة)
+# النافذة الرئيسية - تصميم مستقبلي فضائي
 # ---------------------------------------------------------
-bg_image = None
-canvas_main = None
-bg_photo_main = None
-canvas_bg_main = None
-header_window = None
-button_frame_window = None
-btn_exit = None
-
-def resize_bg_main(event=None):
-    global bg_photo_main, bg_image, canvas_main, canvas_bg_main
-    global header_window, button_frame_window, welcome_root, WINDOW_WIDTH, WINDOW_HEIGHT
-    
-    if event is not None and event.widget != welcome_root:
-        return 
-        
-    new_width = welcome_root.winfo_width()
-    new_height = welcome_root.winfo_height()
-        
-    if bg_image:
-        try:
-            resized = bg_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            bg_photo_main = ImageTk.PhotoImage(resized)
-            canvas_main.itemconfig(canvas_bg_main, image=bg_photo_main)
-        except: pass
-    
-    if header_window is not None:
-        canvas_main.coords(header_window, new_width // 2, int(new_height * 0.12)) # تعديل الارتفاع قليلاً
-    if button_frame_window is not None:
-        canvas_main.coords(button_frame_window, new_width // 2, int(new_height * 0.52))
-    if btn_exit is not None:
-        btn_exit.place(relx=0.97, rely=0.97, anchor="se")
-
 if __name__ == "__main__":
     welcome_root = ctk.CTk()
-    welcome_root.title("Computer Network Management Dashboard")
-    # زيادة الارتفاع (WINDOW_HEIGHT) لاستيعاب الزر الرابع
-    WINDOW_WIDTH, WINDOW_HEIGHT = 700, 700 
+    welcome_root.title("◆ SPACE NETWORK COMMAND CENTER ◆")
+    WINDOW_WIDTH, WINDOW_HEIGHT = 850, 750
     welcome_root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+    welcome_root.configure(fg_color=DEEP_SPACE)
+    welcome_root.minsize(750, 650)
     
-    bg_image = safe_load_image("background_main.jpg")
-    background_color = "#FFFFFF" if bg_image else "#f5f7fa"
-    canvas_main = ctk.CTkCanvas(welcome_root, highlightthickness=0, bg=background_color)
-    canvas_main.pack(fill="both", expand=True)
+    # خلفية فضائية متحركة
+    space_canvas = create_futuristic_canvas(welcome_root)
+    space_canvas.pack(fill="both", expand=True)
     
-    if bg_image:
-        bg_photo_main = ImageTk.PhotoImage(bg_image.resize((WINDOW_WIDTH, WINDOW_HEIGHT)))
-        canvas_bg_main = canvas_main.create_image(0, 0, image=bg_photo_main, anchor="nw")
-
-    welcome_root.bind("<Configure>", resize_bg_main)
-
+    # إطار شفاف رئيسي
+    main_frame = tk.Frame(space_canvas, bg=DEEP_SPACE)
+    main_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.85, relheight=0.9)
+    
+    # رأس القيادة
+    command_header = tk.Frame(main_frame, bg=SPACE_MID, highlightthickness=0)
+    command_header.pack(fill="x", pady=(0, 25))
+    
+    # خطوط زخرفية
+    top_line = tk.Frame(command_header, bg=NEON_BLUE, height=2)
+    top_line.pack(fill="x")
+    
+    header_content = tk.Frame(command_header, bg=SPACE_MID)
+    header_content.pack(pady=15)
+    
+    # عنوان رئيسي
+    main_title = tk.Label(
+        header_content,
+        text="◢ SPACE NETWORK COMMAND CENTER ◣",
+        font=("Segoe UI", 24, "bold"),
+        bg=SPACE_MID,
+        fg=NEON_CYAN
+    )
+    main_title.pack()
+    
+    subtitle = tk.Label(
+        header_content,
+        text="◆ ADVANCED NETWORK CONTROL SYSTEM ◆ v2.6 ◆",
+        font=("Courier New", 11),
+        bg=SPACE_MID,
+        fg=SILVER
+    )
+    subtitle.pack(pady=(5, 0))
+    
+    bottom_line = tk.Frame(command_header, bg=NEON_BLUE, height=1)
+    bottom_line.pack(fill="x")
+    
+    # بطاقة الأزرار المستقبلية
+    console_frame = tk.Frame(main_frame, bg=DEEP_SPACE)
+    console_frame.pack(fill="both", expand=True)
+    
+    # نافذة DHCP
     network_app_root = tk.Tk()
     network_app_root.withdraw()
     app_instance = NetworkApp(network_app_root, back_callback=lambda: [network_app_root.withdraw(), welcome_root.deiconify()])
-
-    # --- UI Elements ---
-    header_label = ctk.CTkLabel(master=welcome_root, text="Network Management Control Center",
-                               font=ctk.CTkFont(family="Arial", size=26, weight="bold"),
-                               text_color="black" if bg_image else "#1F6AA5", fg_color="transparent")
-    header_window = canvas_main.create_window(WINDOW_WIDTH // 2, 80, window=header_label)
-
-    button_frame = ctk.CTkFrame(welcome_root, fg_color="transparent", corner_radius=18, border_color="#1F6AA5", border_width=2)
-    button_frame_window = canvas_main.create_window(WINDOW_WIDTH // 2, 380, window=button_frame)
     
-    # 1. زر DHCP (أخضر)
-    ctk.CTkButton(master=button_frame, text="DHCP Configuration", font=("Arial", 18, "bold"),
-                  width=350, height=55, corner_radius=12, fg_color="#0CC43A", hover_color="#09a632",
-                  command=lambda: [welcome_root.withdraw(), network_app_root.deiconify()]).pack(pady=(20, 10), padx=30)
-
-    # 2. زر DNS (أزرق)
-    ctk.CTkButton(master=button_frame, text="DNS Configuration", font=("Arial", 18, "bold"),
-                  width=350, height=55, corner_radius=12, fg_color="#3498db", hover_color="#2980b9",
-                  command=open_dns_interface_window).pack(pady=10, padx=30)
-
-    # 3. زر VPN (بنفسجي)
-    ctk.CTkButton(master=button_frame, text="VPN Configuration", font=("Arial", 18, "bold"),
-                  width=350, height=55, corner_radius=12, fg_color="#8e44ad", hover_color="#732d91",
-                  command=launch_vpn_interface).pack(pady=10, padx=30)
-
-    # 4. زر VLAN & OSPF الجديد (برتقالي)
-    ctk.CTkButton(master=button_frame, text="VLAN & OSPF Automation", font=("Arial", 18, "bold"),
-                  width=350, height=55, corner_radius=12, fg_color="#d35400", hover_color="#a04000",
-                  command=launch_advanced_automation).pack(pady=(10, 20), padx=30)
-
-    # زر الخروج
-    btn_exit = ctk.CTkButton(master=welcome_root, text="Exit", font=("Arial", 14, "bold"),
-                            width=100, height=35, corner_radius=10, fg_color="#CC0000",
-                            command=lambda: sys.exit())
-    btn_exit.place(relx=0.97, rely=0.97, anchor="se") 
-
-    welcome_root.update()
-    resize_bg_main(None)
+    # أزرار فضائية
+    btn_dhcp = create_futuristic_button(
+        console_frame,
+        "🛸  DHCP CONFIGURATION MODULE",
+        lambda: [welcome_root.withdraw(), network_app_root.deiconify()],
+        HOLO_GREEN
+    )
+    btn_dhcp.pack(pady=40)
+    
+    btn_dns = create_futuristic_button(
+        console_frame,
+        "🌌  DNS CONFIGURATION MODULE",
+        open_dns_interface_window,
+        NEON_BLUE
+    )
+    btn_dns.pack(pady=40)
+    
+    btn_vpn = create_futuristic_button(
+        console_frame,
+        "🔮  VPN CONFIGURATION MODULE",
+        launch_vpn_interface,
+        NEON_PURPLE
+    )
+    btn_vpn.pack(pady=40)
+    
+    btn_vlan = create_futuristic_button(
+        console_frame,
+        "⚡  VLAN & OSPF AUTOMATION",
+        launch_advanced_automation,
+        WARP_CORE
+    )
+    btn_vlan.pack(pady=40)
+    
+    # لوحة تحكم سفلية
+    control_panel = tk.Frame(main_frame, bg=SPACE_MID, height=50)
+    control_panel.pack(fill="x", pady=(20, 0))
+    control_panel.pack_propagate(False)
+    
+    # أزرار تحكم
+    exit_button = ctk.CTkButton(
+        control_panel,
+        text="◆ POWER OFF ◆",
+        font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+        width=100,
+        height=30,
+        corner_radius=15,
+        fg_color="transparent",
+        hover_color=WARP_CORE + "33",
+        text_color=WARP_CORE,
+        border_width=1,
+        border_color=WARP_CORE,
+        command=lambda: sys.exit()
+    )
+    exit_button.pack(side="right", padx=15)
+    
+    # مؤشرات حالة
+    status_text = tk.Label(
+        control_panel,
+        text="◆ ALL SYSTEMS OPERATIONAL ◆",
+        font=("Courier New", 10),
+        bg=SPACE_MID,
+        fg=HOLO_GREEN
+    )
+    status_text.pack(side="left", padx=15)
+    
+    # مؤشر وامض (blinking dot)
+    def blink():
+        current = status_text.cget("fg")
+        next_color = HOLO_GREEN if current == DEEP_SPACE else DEEP_SPACE
+        status_text.configure(fg=next_color)
+        space_canvas.after(800, blink)
+    
+    blink()
+    
     welcome_root.mainloop()
